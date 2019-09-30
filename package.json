@@ -16,5 +16,8 @@
   "bugs": {
     "url": "https://github.com/keyvanzz/tinyapp/issues"
   },
-  "homepage": "https://github.com/keyvanzz/tinyapp#readme"
+  "homepage": "https://github.com/keyvanzz/tinyapp#readme",
+  "dependencies": {
+    "express": "^4.17.1"
+  }
 }
