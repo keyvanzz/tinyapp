@@ -46,12 +46,20 @@ app.get("/urls/new", (req,res) => {
 });
 
 app.post("/urls", (req, res) => {
-  console.log(req.body);  // Log the POST request body to the console
-  res.send("ok");         // Respond with 'Ok' (we will replace this)
+  console.log(req.body.longURL);  // Log the POST request body to the console
+  // add new long url to urlDatabase
+  const shortURL  = generateRandomString();
+  urlDatabase[shortURL] = req.body.longURL;
+  res.redirect(`/urls/${shortURL}`);// esponds with a redirect to /urls/:shortURL
 });
 
 app.get("/urls/:shortURL", (req, res) => {
   res.render("urls_show", { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL]})
+});
+
+app.get("/u/:shortURL", (req, res) => {
+  const longURL = urlDatabase[req.params.shortURL]
+  res.redirect(longURL);
 });
 
 app.listen(PORT, () => {
