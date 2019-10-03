@@ -1,6 +1,7 @@
 const express = require("express");
 const cookieParser = require('cookie-parser')
 const bodyParser = require("body-parser");
+const bcrypt = require('bcrypt');
 
 const app = express();
 const PORT = 8080; // default port 8080
@@ -15,24 +16,19 @@ const generateRandomString = function () {
 }
 
 const urlDatabase = {
-  b6UTxQ: { longURL: "https://www.tsn.ca", userID: "1" },
-  i3BoGr: { longURL: "https://www.google.ca", userID: "2" }
+  b6UTxQ: { longURL: "https://www.example.com", userID: "aJ48lW" },
+  i3BoGr: { longURL: "https://www.example2.com", userID: "aJ48lW" }
 };
 
-// const urlDatabase = {
-//   "b2xVn2": "http://www.lighthouselabs.ca",
-//   "9sm5xK": "http://www.google.com"
-// };
-
 const users = { 
-  "1": {
-    email: "123@example.com", 
-    password: "123",
+  "aJ48lM": {
+    email: "user1@example.com", 
+    password: "passw0rd!",
     id: "1"
   },
- "2": {
+ "aJ48lW": {
     email: "user2@example.com", 
-    password: "dishwasher-funk",
+    password: "passw0rd!",
     id: "2"
   }
 }
@@ -60,6 +56,7 @@ app.get("/urls", (req, res) => {
         urls[key] = urlDatabase[key];
       }
     }
+    console.log(users)
     res.render("urls_index", templateVars);
   }
 });
@@ -100,8 +97,8 @@ app.post("/register", (req, res) => {
   // validate data - i.e. email is string
   // more validation -  tries to register with an email that is already in the users objec
   let newUser = {
-    email: req.body.email, 
-    password: req.body.password,
+    email: req.body.email,
+    password: bcrypt.hashSync(req.body.password,10),
     id: generateRandomString()
   }
   users[newUser.id] = newUser;
@@ -118,7 +115,7 @@ app.post("/login", (req,res) => {
   let userObject = undefined;
   for (const user in users) {
     if (req.body.email === users[user].email ) {
-      if (req.body.password === users[user].password) {
+      if (bcrypt.compareSync(req.body.password, users[user].password)) {
         userObject = users[user]
         res.cookie("user_id", users[user].id);
         // LOGIN - USE RES.COOKIE TO SET COOKIE
