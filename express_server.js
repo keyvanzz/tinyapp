@@ -143,7 +143,7 @@ app.post("/login", (req,res) => {
         // LOGIN - USE RES.COOKIE TO SET COOKIE
         res.redirect("/urls");
       } else {
-        res.status(403).send("The password is incorrec")
+        res.status(403).send("The password is incorrect!")
       }
  
     } 
