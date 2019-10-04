@@ -2,7 +2,7 @@ const express = require("express");
 const cookieSession = require('cookie-session')
 const bodyParser = require("body-parser");
 const bcrypt = require('bcrypt');
-
+const { getUserByEmail } = require('./helpers')
 const app = express();
 const PORT = 8080; // default port 8080
 app.set("view engine", "ejs");
@@ -87,15 +87,12 @@ app.get("/register", (req,res) => {
 
 app.post("/register", (req, res) => {
   // validate input
+  let user = getUserByEmail(req.body.email, users)
+  if (user) {
+    return res.status(400).send(`<h1>Account associated with ${req.body.email} already exists!</h1>`)
+  } 
   if(req.body.email.length === 0 || req.body.password.length === 0) {
-    res.status(400).send("<h1>Please enter your email or password!</h1>")
-    return;
-  }
-  for (const user in users) {
-    if (req.body.email === users[user].email) {
-      res.status(400).send(`<h1>Account associated with ${req.body.email} already exists!</h1>`)
-      return;
-    }
+    return res.status(400).send("<h1>Please enter your email or password!</h1>");
   }
   // validate data - i.e. email is string
   // more validation -  tries to register with an email that is already in the users objec
@@ -115,27 +112,16 @@ app.get("/login", (req,res) => {
 });
 
 app.post("/login", (req,res) => {
-  let userObject = undefined;
-  for (const user in users) {
-    if (req.body.email === users[user].email ) {
-      if (bcrypt.compareSync(req.body.password, users[user].password)) {
-        userObject = users[user]
-        req.session.userId = users[user].id; // LOGIN - USE req.session.userId = "some value"; TO SET COOKIE
-        res.redirect("/urls");
-        return;
-      } else {
-        res.status(403).send("<h1>The username or password you entered is incorrect!</h1>")
-        return;
-      }
- 
-    } 
-      userObject = undefined 
+  let user = getUserByEmail(req.body.email, users)
+  if (!user) {
+    return res.status(403).send(`<h1>An account associated with ${req.body.email} does not exist</h1>`);
+  } else if (bcrypt.compareSync(req.body.password, user.password)) {
+    req.session.userId = user.id; // LOGIN - USE req.session.userId = "some value"; TO SET COOKIE
+    res.redirect("/urls");
+    return;
+  } else {
+    return res.status(403).send("<h1>The username or password you entered is incorrect!</h1>");
   }
-
-  if(!userObject){
-    res.status(403).send(`<h1>An account associated with ${req.body.email} does not exist</h1>`)
-  } 
-  
 })
 
 app.get("/u/:shortURL", (req, res) => {
