@@ -47,11 +47,24 @@ const userUrls = function(userID) {
 }
 
 //App Routes
+app.get("/", (req,res) => {
+  const userID = req.session.userId;
+  if(!userID) {
+    res.redirect("/login");
+  } else {
+    res.redirect("/urls");
+  }
+});
+
+app.get("/error", (req,res) => {
+  res.render("error", {user: ""} )
+});
+
 app.get("/urls", (req, res) => {
   const userID = req.session.userId;
   const templateVars = { urls: userUrls(userID), user: users[userID] };
   if (!userID) {
-    res.render("urls_index", templateVars)
+    res.render("urls_index", templateVars);
   } else {
     const urls = {};
     for (const key in urlDatabase) {
@@ -75,25 +88,34 @@ app.get("/urls/new", (req,res) => {
 });
 
 app.post("/urls", (req, res) => {
-  // add new long url to urlDatabase
+  const userID = req.session.userId;
+  if (!userID) {
+    return res.status(403).send(`<h1>Please register or login first!</h1>`);
+  } else {
   const shortURL  = generateRandomString();
   urlDatabase[shortURL] = { longURL: req.body.longURL, userID: req.session.userId };
   res.redirect(`/urls/${shortURL}`);// esponds with a redirect to /urls/:shortURL
+  }
 });
 
 app.get("/register", (req,res) => {
+  const userID = req.session.userId;
+  if (userID) {
+    res.redirect("/urls");
+  } else {
   res.render("register", {user: ""});
+  }
 });
 
 app.post("/register", (req, res) => {
-  // validate input
-  let user = getUserByEmail(req.body.email, users)
-  if (user) {
-    return res.status(400).send(`<h1>Account associated with ${req.body.email} already exists!</h1>`)
-  } 
   if(req.body.email.length === 0 || req.body.password.length === 0) {
     return res.status(400).send("<h1>Please enter your email or password!</h1>");
   }
+  // validate input
+  let userID = getUserByEmail(req.body.email, users)
+  if (userID) {
+    return res.status(400).send(`<h1>Account associated with ${req.body.email} already exists!</h1>`)
+  } 
   // validate data - i.e. email is string
   // more validation -  tries to register with an email that is already in the users objec
   let newUser = {
@@ -108,15 +130,20 @@ app.post("/register", (req, res) => {
 });
 
 app.get("/login", (req,res) => {
+  const userID = req.session.userId;
+  if (userID) {
+    res.redirect("/urls");
+  } else {
   res.render("login", {user: ""});
+  }
 });
 
 app.post("/login", (req,res) => {
-  let user = getUserByEmail(req.body.email, users)
-  if (!user) {
+  let userID = getUserByEmail(req.body.email, users);
+  if (!userID) {
     return res.status(403).send(`<h1>An account associated with ${req.body.email} does not exist</h1>`);
-  } else if (bcrypt.compareSync(req.body.password, user.password)) {
-    req.session.userId = user.id; // LOGIN - USE req.session.userId = "some value"; TO SET COOKIE
+  } else if (bcrypt.compareSync(req.body.password, users[userID].password)) {
+    req.session.userId = userID; // LOGIN - USE req.session.userId = "some value"; TO SET COOKIE
     res.redirect("/urls");
     return;
   } else {
@@ -125,18 +152,22 @@ app.post("/login", (req,res) => {
 })
 
 app.get("/u/:shortURL", (req, res) => {
+  const shortUrl = urlDatabase[req.params.shortURL]
+  if (!shortUrl) {
+    return res.redirect("/error");
+  }
   const longURL = urlDatabase[req.params.shortURL].longURL;
   res.redirect(longURL);
 });
 
 app.get("/urls/:shortURL", (req, res) => {
-  const userID = req.session.userId;
-  let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL].longURL, user: users[userID] };
-  if (userID && userID === urlDatabase[req.params.shortURL].userID) {
-    res.render("urls_show", templateVars);
-  } else {
-    res.render("urls_index", templateVars);
+  const shortUrl = urlDatabase[req.params.shortURL]
+  if (!shortUrl) {
+    return res.redirect("/error");
   }
+  const userID = req.session.userId;
+  let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL].longURL, user: users[userID], ownUrl: userID && userID === urlDatabase[req.params.shortURL].userID };
+  res.render("urls_show", templateVars);
 });
 
 app.post("/urls/:shortURL", (req, res) => {
