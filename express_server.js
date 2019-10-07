@@ -4,7 +4,7 @@ const bodyParser = require("body-parser");
 const bcrypt = require('bcrypt');
 const { getUserByEmail } = require('./helpers')
 const app = express();
-const PORT = 8080; // default port 8080
+const PORT = 8080; //Default port 8080
 app.set("view engine", "ejs");
 
 //Middleware Vendors
@@ -72,18 +72,7 @@ app.get("/urls", (req, res) => {
         urls[key] = urlDatabase[key];
       }
     }
-    console.log(users)
     res.render("urls_index", templateVars);
-  }
-});
-
-app.get("/urls/new", (req,res) => {
-  const userID = req.session.userId;
-  let templateVars = { urls: userUrls(userID), user: users[userID] }
-  if (userID) {
-    res.render("urls_new", templateVars);
-  } else {
-    res.redirect("/login")
   }
 });
 
@@ -94,7 +83,17 @@ app.post("/urls", (req, res) => {
   } else {
   const shortURL  = generateRandomString();
   urlDatabase[shortURL] = { longURL: req.body.longURL, userID: req.session.userId };
-  res.redirect(`/urls/${shortURL}`);// esponds with a redirect to /urls/:shortURL
+  res.redirect(`/urls/${shortURL}`);
+  }
+});
+
+app.get("/urls/new", (req,res) => {
+  const userID = req.session.userId;
+  let templateVars = { urls: userUrls(userID), user: users[userID] }
+  if (userID) {
+    res.render("urls_new", templateVars);
+  } else {
+    res.redirect("/login")
   }
 });
 
@@ -111,22 +110,18 @@ app.post("/register", (req, res) => {
   if(req.body.email.length === 0 || req.body.password.length === 0) {
     return res.status(400).send("<h1>Please enter your email or password!</h1>");
   }
-  // validate input
   let userID = getUserByEmail(req.body.email, users)
   if (userID) {
     return res.status(400).send(`<h1>Account associated with ${req.body.email} already exists!</h1>`)
   } 
-  // validate data - i.e. email is string
-  // more validation -  tries to register with an email that is already in the users objec
   let newUser = {
     email: req.body.email,
     password: bcrypt.hashSync(req.body.password,10),
     id: generateRandomString()
   }
   users[newUser.id] = newUser;
-  console.log(users);
   req.session.userId = newUser.id; //REGISTER - USE req.session.userId = "some value"; TO SET COOKIE
-  res.redirect(`/urls`);// esponds with a redirect to /urls/:shortURL
+  res.redirect(`/urls`);
 });
 
 app.get("/login", (req,res) => {
@@ -143,7 +138,7 @@ app.post("/login", (req,res) => {
   if (!userID) {
     return res.status(403).send(`<h1>An account associated with ${req.body.email} does not exist</h1>`);
   } else if (bcrypt.compareSync(req.body.password, users[userID].password)) {
-    req.session.userId = userID; // LOGIN - USE req.session.userId = "some value"; TO SET COOKIE
+    req.session.userId = userID; //LOGIN - USE req.session.userId = "some value"; TO SET COOKIE
     res.redirect("/urls");
     return;
   } else {
@@ -190,11 +185,7 @@ app.post("/urls/:shortURL/delete", (req, res) => {
     res.redirect("/urls");
   } else{
     res.status(403).send(`Permission Denied!`)
-    // res.render("urls_index", templateVars)
   }
-  // let shortURL = req.params.shortURL;
-  // delete urlDatabase[shortURL];
-  // res.redirect("/urls");
 });
 
 app.post("/logout", (req,res) => {
